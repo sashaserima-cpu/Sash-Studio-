@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "portfolio_item": {
+      "title": "Portfolio Item",
+      "description": "A project or work sample in the portfolio.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the project."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the project (e.g., Social Media Design)."
+        },
+        "image": {
+          "type": "string",
+          "description": "The URL of the project image."
+        },
+        "link": {
+          "type": "string",
+          "description": "An optional external link for the project."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the project was added."
+        },
+        "uid": {
+          "type": "string",
+          "description": "The ID of the user who added the project."
+        }
+      },
+      "required": ["title", "category", "image", "createdAt", "uid"]
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "imageUrl": {
+          "type": "string",
+          "description": "The URL of the profile image."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography of the user."
+        },
+        "age": {
+          "type": "integer",
+          "description": "The age of the user."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the profile was updated."
+        }
+      },
+      "required": ["imageUrl", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "portfolio_items": {
+      "schema": "portfolio_item",
+      "description": "A collection of portfolio projects."
+    },
+    "profile": {
+      "schema": "profile",
+      "description": "A collection containing the user profile (usually one document)."
+    }
+  }
+}

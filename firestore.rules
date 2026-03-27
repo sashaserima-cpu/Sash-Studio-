@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: portfolio_items
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required) - Project title
+    //   - category: string (required) - Project category
+    //   - image: string (required) - Image URL
+    //   - link: string (optional) - External link
+    //   - createdAt: timestamp (required) - Creation time
+    //   - uid: string (required) - Creator's UID
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "sashaserima@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidPortfolioItem(data) {
+      return data.keys().hasAll(['title', 'category', 'createdAt', 'uid']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.category is string && data.category.size() > 0 &&
+             (data.keys().hasAny(['image', 'link'])) &&
+             (!('image' in data) || (data.image is string && data.image.size() > 0)) &&
+             (!('link' in data) || (data.link is string && data.link.size() > 0)) &&
+             data.uid == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    function isValidProfile(data) {
+      return data.keys().hasAll(['imageUrl', 'updatedAt']) &&
+             data.imageUrl is string && data.imageUrl.size() > 0 &&
+             data.updatedAt == request.time &&
+             (!('bio' in data) || data.bio is string) &&
+             (!('age' in data) || data.age is int);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /portfolio_items/{itemId} {
+      // Allow anyone to read the portfolio (it's a portfolio app)
+      allow read: if true; 
+      
+      allow create: if isAuthenticated() && isAdmin() && isValidPortfolioItem(request.resource.data);
+      allow update: if isAuthenticated() && isAdmin() && isValidPortfolioItem(request.resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /profile/{profileId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin() && isValidProfile(request.resource.data);
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && isOwner(userId) && 
+                   (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isAdmin());
+    }
+  }
+}
